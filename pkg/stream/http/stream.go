@@ -404,18 +404,9 @@ func writeBodyToPipe(r *bufio.Reader, maxBodySize int, contentLength int, writeF
 
 var ErrBodyTooLarge = errors.New("body too large")
 
-func appendBodyFixedSize(r *bufio.Reader, dst []byte, n int, writeFunc func(data []byte) error) ([]byte, error) {
-	if n == 0 {
-		return dst, nil
-	}
-
-	offset := len(dst)
-	dstLen := offset + n
-	if cap(dst) < dstLen {
-		b := make([]byte, round2(dstLen))
-		copy(b, dst)
-		dst = b
-	}
+func appendBodyFixedSize(r *bufio.Reader, dstLen int) ([]byte, error) {
+	offset := 0
+	dst := make([]byte, round2(dstLen))
 	dst = dst[:dstLen]
 
 	for {
@@ -440,7 +431,6 @@ var strCRLF = []byte("\r\n")
 
 func writeBodyChunked(r *bufio.Reader, maxBodySize int, writeFunc func(data []byte) error) error {
 	for {
-		buf := make([]byte, 0)
 		chunkSize, err := parseChunkSize(r)
 		if err != nil {
 			return err
@@ -449,7 +439,7 @@ func writeBodyChunked(r *bufio.Reader, maxBodySize int, writeFunc func(data []by
 			return nil
 		}
 
-		buf, err = handleChunk(r, maxBodySize, buf, chunkSize, writeFunc)
+		buf, err := handleChunk(r, maxBodySize, chunkSize)
 		if err != nil {
 			return err
 		}
@@ -460,9 +450,9 @@ func writeBodyChunked(r *bufio.Reader, maxBodySize int, writeFunc func(data []by
 	}
 }
 
-func handleChunk(r *bufio.Reader, maxBodySize int, dst []byte, chunkSize int, writeFunc func(data []byte) error) ([]byte, error) {
+func handleChunk(r *bufio.Reader, maxBodySize int, chunkSize int) ([]byte, error) {
 	strCRLFLen := len(strCRLF)
-	dst, err := appendBodyFixedSize(r, dst, chunkSize+strCRLFLen, writeFunc)
+	dst, err := appendBodyFixedSize(r, chunkSize+strCRLFLen)
 	if err != nil {
 		return dst, err
 	}
@@ -1075,9 +1065,9 @@ func (s *serverStream) AppendHeaders(context context.Context, headersIn types.He
 func (s *serverStream) AppendData(context context.Context, data buffer.IoBuffer, endStream bool) error {
 	// SetBodyRaw sets response body and could avoid copying it
 	if s.response.Header.ContentLength() == -1 {
-		s.response.SetBodyRaw(data.Bytes())
-	} else {
 		s.response.SetBodyStream(data, -1)
+	} else {
+		s.response.SetBodyRaw(data.Bytes())
 	}
 
 	if endStream {
