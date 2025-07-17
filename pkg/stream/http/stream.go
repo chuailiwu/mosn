@@ -1167,7 +1167,19 @@ func (s *serverStream) endStream() error {
 	}
 	defer s.DestroyStream()
 
-	err := s.doSend()
+	done := make(chan error, 1)
+	utils.GoWithRecover(func() {
+		err := s.doSend()
+		done <- err
+	}, nil)
+
+	var err error
+	select {
+	case err = <-done:
+	case <-s.connection.connClosed:
+		err = errors.New("stream connection closed")
+	}
+
 	s.responseDoneChan <- true
 
 	if resetConn {
