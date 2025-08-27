@@ -118,7 +118,7 @@ func (b *subsetLoadBalancerBuilder) safeCheckKeyValueSize(key string, valueSize 
 	if subsetKeyThresholdConfig.IsEnableLogging() {
 		thresholds := subsetKeyThresholdConfig.GetThresholds(key)
 		if valueSize > thresholds {
-			log.DefaultLogger.Errorf("Cluster Named: %s, subset key %s count %d exceeds threshold %d", b.info.Name(), key, valueSize, thresholds)
+			log.DefaultLogger.Errorf("[UnexpectedSubsetKey] Cluster Named: %s, subset key %s count %d exceeds threshold %d", b.info.Name(), key, valueSize, thresholds)
 		}
 	}
 }
