@@ -100,3 +100,24 @@ func GetAlpha() float64 {
 func SetAlpha(a float64) {
 	alpha = a
 }
+
+// SetHostStatsAlpha updates the alpha value of all EWMA metrics in the given HostStats.
+// It uses the AlphaSetter interface to dynamically reconfigure the decay rate.
+func SetHostStatsAlpha(stats *types.HostStats, newAlpha float64) {
+	if stats == nil {
+		return
+	}
+	setEWMAAlpha(stats.UpstreamRequestDurationEWMA, newAlpha)
+	setEWMAAlpha(stats.UpstreamResponseTotalEWMA, newAlpha)
+	setEWMAAlpha(stats.UpstreamResponseClientErrorEWMA, newAlpha)
+	setEWMAAlpha(stats.UpstreamResponseServerErrorEWMA, newAlpha)
+}
+
+func setEWMAAlpha(e interface{}, newAlpha float64) {
+	if e == nil {
+		return
+	}
+	if setter, ok := e.(metrics.AlphaSetter); ok {
+		setter.SetAlpha(newAlpha)
+	}
+}

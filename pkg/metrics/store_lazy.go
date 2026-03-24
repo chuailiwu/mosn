@@ -235,3 +235,14 @@ func (le *lazyEWMA) Update(i int64) {
 	le.preFunc()
 	le.ewma.Update(i)
 }
+
+type AlphaSetter interface {
+	SetAlpha(newAlpha float64)
+}
+
+func (le *lazyEWMA) SetAlpha(newAlpha float64) {
+	le.preFunc()
+	if setter, ok := le.ewma.(AlphaSetter); ok {
+		setter.SetAlpha(newAlpha)
+	}
+}

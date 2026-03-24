@@ -88,6 +88,14 @@ func (e *EWMA) ewma(lastEWMA, i float64, lastTickTime, now time.Time) float64 {
 	return i*e.alpha + math.Pow(1-e.alpha, float64(now.Sub(lastTickTime))/float64(time.Second))*lastEWMA
 }
 
+// SetAlpha updates the alpha value of the EWMA instance.
+// This allows dynamic reconfiguration of the decay rate without recreating the EWMA.
+func (e *EWMA) SetAlpha(newAlpha float64) {
+	e.mutex.Lock()
+	e.alpha = newAlpha
+	e.mutex.Unlock()
+}
+
 // Alpha the alpha needed to decay 1 to negligible (less than target) over a given duration.
 //
 // (1 - alpha) ^ duration = target     ==>     alpha = 1 - target ^ (1 / duration).
